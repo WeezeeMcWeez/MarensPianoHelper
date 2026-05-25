@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piano Theory Trainer</title>
+    <style>
+        :root {
+            --bg:      #0d0e1a;
+            --surface: #161829;
+            --card:    #1e2038;
+            --border:  #2a2e50;
+            --accent:  #f0a030;
+            --blue:    #4cc2ff;
+            --text:    #e8eaf6;
+            --muted:   #7880a8;
+            --correct: #2ecc71;
+            --wrong:   #e74c3c;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 28px 20px 40px;
+            gap: 16px;
+        }
+
+        header { text-align: center; }
+        header h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+        header p  { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+        /* ── Tabs ── */
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 5px;
+        }
+        .tab-btn {
+            padding: 9px 28px;
+            border-radius: 7px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            background: transparent;
+            color: var(--muted);
+            transition: background 0.15s, color 0.15s;
+        }
+        .tab-btn.active { background: var(--accent); color: #1a0a00; }
+
+        /* ── Panels ── */
+        .panel { display: none; width: 100%; flex-direction: column; align-items: center; gap: 14px; }
+        .panel.active { display: flex; }
+        #panel-staff { max-width: 580px; }
+        #panel-keys  { max-width: 668px; }
+
+        /* ── Question Card ── */
+        .question-card {
+            width: 100%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            min-height: 82px;
+        }
+        .q-eyebrow { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2.5px; color: var(--muted); margin-bottom: 5px; }
+        .q-main    { font-size: 1.2rem; font-weight: 700; line-height: 1.3; }
+        .q-detail  { margin-top: 5px; font-size: 0.82rem; color: var(--muted); }
+        .note-name { color: var(--accent); font-size: 1.5rem; font-weight: 800; }
+
+        .score-box  { text-align: right; flex-shrink: 0; }
+        .score-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); }
+        .score-value { font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+        /* ── Clef chips ── */
+        .clef-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 10px;
+            border-radius: 100px;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+        .chip-treble { background: rgba(76,194,255,.15); color: var(--blue);   border: 1px solid rgba(76,194,255,.3); }
+        .chip-bass   { background: rgba(240,160,48,.15);  color: var(--accent); border: 1px solid rgba(240,160,48,.3); }
+
+        /* ── Feedback ── */
+        .feedback {
+            width: 100%;
+            min-height: 40px;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-align: center;
+            display: none;
+        }
+        .feedback.correct { display: block; background: rgba(46,204,113,.12); color: var(--correct); border: 1px solid rgba(46,204,113,.3); }
+        .feedback.wrong   { display: block; background: rgba(231,76,60,.12);  color: var(--wrong);   border: 1px solid rgba(231,76,60,.3); }
+
+        /* ── Canvas wrappers ── */
+        .canvas-wrap {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+        }
+        canvas { display: block; }
+
+        /* ── Note Button Grid ── */
+        .note-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+        }
+        .note-btn {
+            padding: 11px 4px;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.1s, background 0.1s;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .note-btn:hover:not(:disabled) { background: var(--border); transform: translateY(-1px); }
+        .note-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+        .note-btn.is-correct { background: rgba(46,204,113,.22); border-color: rgba(46,204,113,.6); color: var(--correct); }
+        .note-btn.is-wrong   { background: rgba(231,76,60,.22);  border-color: rgba(231,76,60,.6);  color: var(--wrong); }
+
+        /* ── Controls ── */
+        .controls { display: flex; gap: 12px; }
+        .btn {
+            padding: 11px 26px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.15s;
+            font-family: inherit;
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.4; cursor: default; }
+        .btn-primary   { background: var(--accent); color: #1a0a00; }
+        .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>&#127929; Piano Theory Trainer</h1>
+    <p>Staff reading &amp; keyboard identification &nbsp;&middot;&nbsp; All 12 notes</p>
+</header>
+
+<div class="tab-nav">
+    <button class="tab-btn active" data-tab="staff">&#x1F3B5; Staff Reading</button>
+    <button class="tab-btn" data-tab="keys">&#x1F3B9; Keyboard</button>
+</div>
+
+<!-- ═══ STAFF PANEL ═══ -->
+<div id="panel-staff" class="panel active">
+    <div class="question-card">
+        <div>
+            <div class="q-eyebrow">Identify the note</div>
+            <div class="q-main" id="staff-qMain">Press <strong>New Question</strong> to begin</div>
+            <div class="q-detail" id="staff-qDetail"></div>
+        </div>
+        <div class="score-box">
+            <div class="score-label">Score</div>
+            <div class="score-value" id="staff-score" style="color:var(--muted)">&#8212;</div>
+        </div>
+    </div>
+
+    <div class="canvas-wrap">
+        <canvas id="staff-canvas" width="520" height="220"></canvas>
+    </div>
+
+    <div class="feedback" id="staff-fb"></div>
+
+    <div class="note-grid" id="note-grid"></div>
+
+    <div class="controls">
+        <button class="btn btn-primary"   id="staff-new">New Question</button>
+        <button class="btn btn-secondary" id="staff-reveal" disabled>Reveal Answer</button>
+    </div>
+</div>
+
+<!-- ═══ KEYS PANEL ═══ -->
+<div id="panel-keys" class="panel">
+    <div class="question-card">
+        <div>
+            <div class="q-eyebrow">Find the key</div>
+            <div class="q-main" id="keys-qMain">Press <strong>New Question</strong> to begin</div>
+        </div>
+        <div class="score-box">
+            <div class="score-label">Score</div>
+            <div class="score-value" id="keys-score" style="color:var(--muted)">&#8212;</div>
+        </div>
+    </div>
+
+    <div class="canvas-wrap" style="padding:10px;">
+        <canvas id="keys-canvas" width="640" height="165" style="cursor:pointer"></canvas>
+    </div>
+
+    <div class="feedback" id="keys-fb"></div>
+
+    <div class="controls">
+        <button class="btn btn-primary"   id="keys-new">New Question</button>
+        <button class="btn btn-secondary" id="keys-reveal" disabled>Reveal Answer</button>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  SHARED DATA
+// ═══════════════════════════════════════════════════════
+const NOTES_12 = [
+    { name: 'C',      ch: 0  },
+    { name: 'C#/Db',  ch: 1  },
+    { name: 'D',      ch: 2  },
+    { name: 'D#/Eb',  ch: 3  },
+    { name: 'E',      ch: 4  },
+    { name: 'F',      ch: 5  },
+    { name: 'F#/Gb',  ch: 6  },
+    { name: 'G',      ch: 7  },
+    { name: 'G#/Ab',  ch: 8  },
+    { name: 'A',      ch: 9  },
+    { name: 'A#/Bb',  ch: 10 },
+    { name: 'B',      ch: 11 },
+];
+
+const NOTE_VALUE_LABELS = {
+    whole: 'Whole note',
+    half: 'Half note',
+    quarter: 'Quarter note',
+    eighth: 'Eighth note',
+    sixteenth: 'Sixteenth note',
+};
+
+const NOTE_VALUES = Object.keys(NOTE_VALUE_LABELS);
+
+// Which accidentals each natural note can take
+const ACC_OPTIONS = {
+    C: ['#'], D: ['#','b'], E: ['b'],
+    F: ['#'], G: ['#','b'], A: ['#','b'], B: ['b'],
+};
+
+function rnd(n) { return Math.floor(Math.random() * n); }
+
+// ═══════════════════════════════════════════════════════
+//  STAFF QUIZ — CANVAS DRAWING
+// ═══════════════════════════════════════════════════════
+const staffCvs = document.getElementById('staff-canvas');
+const sc       = staffCvs.getContext('2d');
+
+const S = {
+    TEXT:    '#e8eaf6',
+    SURFACE: '#161829',
+    G: 14,          // lineGap
+    yBot: 158,      // y of bottom staff line
+    sL:   85,       // staff left x
+    sR:   500,      // staff right x
+    nX:   285,      // note center x
+};
+S.yTop = S.yBot - 4 * S.G;
+
+// note pools: pos = step-count above bottom line (0=line1, 1=space1, 2=line2…)
+const TREBLE_POOL = [
+    { lt:'C', ch:0,  pos:-2 }, { lt:'D', ch:2,  pos:-1 },
+    { lt:'E', ch:4,  pos: 0 }, { lt:'F', ch:5,  pos: 1 },
+    { lt:'G', ch:7,  pos: 2 }, { lt:'A', ch:9,  pos: 3 },
+    { lt:'B', ch:11, pos: 4 }, { lt:'C', ch:0,  pos: 5 },
+    { lt:'D', ch:2,  pos: 6 }, { lt:'E', ch:4,  pos: 7 },
+    { lt:'F', ch:5,  pos: 8 }, { lt:'G', ch:7,  pos: 9 },
+    { lt:'A', ch:9,  pos:10 },
+];
+const BASS_POOL = [
+    { lt:'E', ch:4,  pos:-2 }, { lt:'F', ch:5,  pos:-1 },
+    { lt:'G', ch:7,  pos: 0 }, { lt:'A', ch:9,  pos: 1 },
+    { lt:'B', ch:11, pos: 2 }, { lt:'C', ch:0,  pos: 3 },
+    { lt:'D', ch:2,  pos: 4 }, { lt:'E', ch:4,  pos: 5 },
+    { lt:'F', ch:5,  pos: 6 }, { lt:'G', ch:7,  pos: 7 },
+    { lt:'A', ch:9,  pos: 8 }, { lt:'B', ch:11, pos: 9 },
+    { lt:'C', ch:0,  pos:10 },
+];
+
+function posToY(pos) { return S.yBot - pos * (S.G / 2); }
+
+function genStaffQ() {
+    const treble = Math.random() < 0.5;
+    const pool   = treble ? TREBLE_POOL : BASS_POOL;
+    const base   = pool[rnd(pool.length)];
+    let { lt, ch, pos } = base;
+    let acc = null;
+
+    if (Math.random() < 0.25 && ACC_OPTIONS[lt]) {
+        acc = ACC_OPTIONS[lt][rnd(ACC_OPTIONS[lt].length)];
+        ch  = acc === '#' ? (ch + 1) % 12 : (ch + 11) % 12;
+    }
+
+    return {
+        clef: treble ? 'treble' : 'bass',
+        lt, ch, acc, pos,
+        noteValue: NOTE_VALUES[rnd(NOTE_VALUES.length)],
+        display: lt + (acc === '#' ? '#' : acc === 'b' ? 'b' : ''),
+    };
+}
+
+function drawStaffCanvas(q) {
+    sc.clearRect(0, 0, staffCvs.width, staffCvs.height);
+
+    // Background
+    sc.fillStyle = S.SURFACE;
+    sc.fillRect(0, 0, staffCvs.width, staffCvs.height);
+
+    // Staff lines
+    sc.strokeStyle = S.TEXT;
+    sc.lineWidth   = 1.2;
+    for (let i = 0; i < 5; i++) {
+        const y = S.yBot - i * S.G;
+        sc.beginPath(); sc.moveTo(S.sL, y); sc.lineTo(S.sR, y); sc.stroke();
+    }
+
+    if (!q) return;
+
+    // Clef symbol
+    sc.fillStyle    = S.TEXT;
+    sc.textBaseline = 'alphabetic';
+    sc.textAlign    = 'left';
+    if (q.clef === 'treble') {
+        // Treble clef: U+1D11E (𝄞), rendered via surrogate pair
+        sc.font = `${S.G * 5.8}px "Segoe UI Symbol","Apple Symbols","FreeSerif",serif`;
+        sc.fillText('𝄞', S.sL + 3, S.yBot + S.G * 0.65);
+    } else {
+        // Bass clef: U+1D122 (𝄢)
+        sc.font = `${S.G * 3.6}px "Segoe UI Symbol","Apple Symbols","FreeSerif",serif`;
+        sc.fillText('𝄢', S.sL + 5, S.yBot - S.G * 0.45);
+    }
+
+    // Ledger lines
+    const ny    = posToY(q.pos);
+    const ledHW = S.G * 1.1;
+    sc.strokeStyle = S.TEXT;
+    sc.lineWidth   = 1.2;
+    if (q.pos <= -2) {
+        for (let p = -2; p >= q.pos; p -= 2) {
+            const ly = posToY(p);
+            sc.beginPath(); sc.moveTo(S.nX - ledHW, ly); sc.lineTo(S.nX + ledHW, ly); sc.stroke();
+        }
+    }
+    if (q.pos >= 10) {
+        for (let p = 10; p <= q.pos; p += 2) {
+            const ly = posToY(p);
+            sc.beginPath(); sc.moveTo(S.nX - ledHW, ly); sc.lineTo(S.nX + ledHW, ly); sc.stroke();
+        }
+    }
+
+    // Accidental
+    if (q.acc) {
+        sc.fillStyle    = S.TEXT;
+        sc.font         = `bold ${S.G * 2.0}px "Segoe UI Symbol","DejaVu Sans",sans-serif`;
+        sc.textAlign    = 'right';
+        sc.textBaseline = 'middle';
+        // U+266F = ♯, U+266D = ♭
+        sc.fillText(q.acc === '#' ? '♯' : '♭', S.nX - S.G * 0.85, ny);
+    }
+
+    // Note head + stem + flags
+    drawNoteShape(sc, S.nX, ny, q.pos, q.noteValue);
+}
+
+function drawNoteShape(ctx, nx, ny, pos, val) {
+    const G   = S.G;
+    const rx  = G * 0.55;
+    const ry  = G * 0.40;
+    const tilt = -0.18;
+    const up   = pos < 4;
+    const sX   = up ? nx + rx * 0.85 : nx - rx * 0.85;
+    const sLen = G * 3.5;
+    const sEndY = up ? ny - sLen : ny + sLen;
+
+    ctx.save();
+    ctx.strokeStyle = S.TEXT;
+    ctx.fillStyle   = S.TEXT;
+
+    if (val === 'whole') {
+        // Thick-stroke ring (no stem)
+        ctx.lineWidth = G * 0.42;
+        ctx.beginPath();
+        ctx.ellipse(nx, ny, rx * 0.75, ry * 0.72, tilt, 0, Math.PI * 2);
+        ctx.stroke();
+
+    } else if (val === 'half') {
+        // Open ellipse + stem
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.ellipse(nx, ny, rx, ry, tilt, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(sX, ny); ctx.lineTo(sX, sEndY); ctx.stroke();
+
+    } else {
+        // Filled ellipse + stem
+        ctx.beginPath();
+        ctx.ellipse(nx, ny, rx, ry, tilt, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(sX, ny); ctx.lineTo(sX, sEndY); ctx.stroke();
+
+        if (val === 'eighth' || val === 'sixteenth') {
+            drawFlag(ctx, sX, sEndY, up, G, 0);
+        }
+        if (val === 'sixteenth') {
+            drawFlag(ctx, sX, sEndY, up, G, up ? G * 0.78 : -G * 0.78);
+        }
+    }
+    ctx.restore();
+}
+
+function drawFlag(ctx, sx, sy, up, G, yOff) {
+    const oy = sy + yOff;
+    ctx.save();
+    ctx.strokeStyle = S.TEXT;
+    ctx.lineWidth   = 1.9;
+    ctx.lineCap     = 'round';
+    ctx.beginPath();
+    if (up) {
+        ctx.moveTo(sx, oy);
+        ctx.bezierCurveTo(sx + G * 1.4, oy + G * 0.4, sx + G * 1.2, oy + G * 1.5, sx - G * 0.2, oy + G * 2.1);
+    } else {
+        ctx.moveTo(sx, oy);
+        ctx.bezierCurveTo(sx + G * 1.4, oy - G * 0.4, sx + G * 1.2, oy - G * 1.5, sx - G * 0.2, oy - G * 2.1);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+// ── Staff quiz state & UI ─────────────────────────────
+const staffSt = { q: null, answered: false, score: 0, total: 0 };
+
+function buildNoteGrid() {
+    const grid = document.getElementById('note-grid');
+    NOTES_12.forEach((n, i) => {
+        const btn = document.createElement('button');
+        btn.className   = 'note-btn';
+        btn.dataset.idx = i;
+        if (n.name.includes('/')) {
+            const [a, b] = n.name.split('/');
+            btn.innerHTML = `${a}<br>${b}`;
+        } else {
+            btn.textContent = n.name;
+        }
+        btn.addEventListener('click', () => onNoteBtn(i));
+        grid.appendChild(btn);
+    });
+}
+
+function onNoteBtn(idx) {
+    if (!staffSt.q || staffSt.answered) return;
+    staffSt.answered = true;
+    staffSt.total++;
+    const ok = idx === staffSt.q.ch;
+    if (ok) staffSt.score++;
+
+    document.querySelectorAll('.note-btn').forEach(b => {
+        b.disabled = true;
+        const bi = +b.dataset.idx;
+        if (bi === staffSt.q.ch)          b.classList.add('is-correct');
+        else if (bi === idx && !ok)        b.classList.add('is-wrong');
+    });
+
+    const fb   = document.getElementById('staff-fb');
+    const cName = NOTES_12[staffSt.q.ch].name;
+    fb.className  = ok ? 'feedback correct' : 'feedback wrong';
+    fb.textContent = ok
+        ? `✓ Correct! The note is ${staffSt.q.display} (${staffSt.q.clef} clef).`
+        : `✗ That was ${NOTES_12[idx].name}. The correct answer is ${cName}.`;
+
+    document.getElementById('staff-reveal').disabled = false;
+    renderStaffScore();
+}
+
+function renderStaffScore() {
+    const el = document.getElementById('staff-score');
+    const { score, total } = staffSt;
+    if (!total) { el.textContent = '—'; el.style.color = 'var(--muted)'; return; }
+    el.textContent = `${score} / ${total}`;
+    const p = score / total;
+    el.style.color = p >= 0.8 ? 'var(--correct)' : p >= 0.6 ? 'var(--accent)' : 'var(--wrong)';
+}
+
+document.getElementById('staff-new').addEventListener('click', () => {
+    staffSt.q = genStaffQ();
+    staffSt.answered = false;
+    const q = staffSt.q;
+
+    const chip = q.clef === 'treble'
+        ? '<span class="clef-chip chip-treble">Treble Clef</span>'
+        : '<span class="clef-chip chip-bass">Bass Clef</span>';
+    document.getElementById('staff-qMain').innerHTML   = `What note is this? ${chip}`;
+    document.getElementById('staff-qDetail').innerHTML = NOTE_VALUE_LABELS[q.noteValue];
+
+    document.querySelectorAll('.note-btn').forEach(b => {
+        b.disabled = false; b.className = 'note-btn';
+    });
+    document.getElementById('staff-fb').className      = 'feedback';
+    document.getElementById('staff-reveal').disabled   = true;
+
+    drawStaffCanvas(q);
+    renderStaffScore();
+});
+
+document.getElementById('staff-reveal').addEventListener('click', () => {
+    if (!staffSt.q || staffSt.answered) return;
+    staffSt.answered = true;
+    staffSt.total++;
+    const cName = NOTES_12[staffSt.q.ch].name;
+    document.querySelectorAll('.note-btn').forEach(b => {
+        b.disabled = true;
+        if (+b.dataset.idx === staffSt.q.ch) b.classList.add('is-correct');
+    });
+    const fb = document.getElementById('staff-fb');
+    fb.className  = 'feedback wrong';
+    fb.textContent = `The note is ${cName} (${staffSt.q.clef} clef).`;
+    renderStaffScore();
+});
+
+// ═══════════════════════════════════════════════════════
+//  KEYBOARD QUIZ
+// ═══════════════════════════════════════════════════════
+const keysCvs = document.getElementById('keys-canvas');
+const kc      = keysCvs.getContext('2d');
+
+const WW = 44;  // white key width (includes 1px gap)
+const WH = 140; // white key height
+const BW = 27;  // black key width
+const BH = 88;  // black key height
+const KY = 12;  // top padding inside canvas
+
+// Black key x-offset from start of octave (left edge of key)
+const BOFF = { 1: 30, 3: 73, 6: 161, 8: 205, 10: 248 };
+
+// White key chromatic indices: C D E F G A B
+const WHITE_CH = [0, 2, 4, 5, 7, 9, 11];
+
+let KB = [];
+
+function buildKBKeys() {
+    KB = [];
+    [4, 5].forEach((oct, oi) => {
+        const ox = oi * 7 * WW;
+        WHITE_CH.forEach((ch, wi) => {
+            KB.push({ ch, oct, isBlack: false, x: ox + wi * WW, y: KY, w: WW - 1, h: WH });
+        });
+        Object.entries(BOFF).forEach(([c, off]) => {
+            KB.push({ ch: +c, oct, isBlack: true, x: ox + off, y: KY, w: BW, h: BH });
+        });
+    });
+}
+
+const keysSt = { q: null, answered: false, hov: null, score: 0, total: 0 };
+
+function genKeysQ() {
+    const ch  = rnd(12);
+    const raw = NOTES_12[ch].name;
+    let display = raw;
+    if (raw.includes('/')) {
+        const [a, b] = raw.split('/');
+        display = rnd(2) === 0 ? a : b;
+    }
+    return { ch, display };
+}
+
+function drawKB(hlCh, wrongKey) {
+    kc.clearRect(0, 0, keysCvs.width, keysCvs.height);
+
+    // White keys
+    KB.filter(k => !k.isBlack).forEach(k => {
+        let fill = '#f2efe8';
+        if (hlCh >= 0 && k.ch === hlCh)                    fill = '#2ecc71';
+        else if (wrongKey && k === wrongKey)                fill = '#e74c3c';
+        else if (!keysSt.answered && keysSt.hov === k)     fill = '#dce0ff';
+
+        kc.fillStyle   = fill;
+        kc.strokeStyle = '#555';
+        kc.lineWidth   = 1;
+        kc.beginPath();
+        if (kc.roundRect) kc.roundRect(k.x, k.y, k.w, k.h, [0,0,5,5]);
+        else kc.rect(k.x, k.y, k.w, k.h);
+        kc.fill(); kc.stroke();
+    });
+
+    // Black keys
+    KB.filter(k => k.isBlack).forEach(k => {
+        let fill = '#1e1e1e';
+        if (hlCh >= 0 && k.ch === hlCh)                    fill = '#2ecc71';
+        else if (wrongKey && k === wrongKey)                fill = '#e74c3c';
+        else if (!keysSt.answered && keysSt.hov === k)     fill = '#555';
+
+        kc.fillStyle   = fill;
+        kc.strokeStyle = '#000';
+        kc.lineWidth   = 1;
+        kc.beginPath();
+        if (kc.roundRect) kc.roundRect(k.x, k.y, k.w, k.h, [0,0,4,4]);
+        else kc.rect(k.x, k.y, k.w, k.h);
+        kc.fill(); kc.stroke();
+    });
+
+    // Octave labels on C keys
+    kc.fillStyle    = '#888';
+    kc.font         = '9px "Segoe UI",sans-serif';
+    kc.textAlign    = 'center';
+    kc.textBaseline = 'bottom';
+    KB.filter(k => !k.isBlack && k.ch === 0).forEach(k => {
+        kc.fillText(`C${k.oct}`, k.x + k.w / 2, k.y + k.h - 3);
+    });
+}
+
+function hitKB(x, y) {
+    for (const k of KB) {
+        if (!k.isBlack) continue;
+        if (x >= k.x && x < k.x + k.w && y >= k.y && y < k.y + k.h) return k;
+    }
+    for (const k of KB) {
+        if (k.isBlack) continue;
+        if (x >= k.x && x < k.x + k.w && y >= k.y && y < k.y + k.h) return k;
+    }
+    return null;
+}
+
+keysCvs.addEventListener('click', e => {
+    if (!keysSt.q || keysSt.answered) return;
+    const r = keysCvs.getBoundingClientRect();
+    const k = hitKB(e.clientX - r.left, e.clientY - r.top);
+    if (!k) return;
+
+    keysSt.answered = true;
+    keysSt.total++;
+    const ok = k.ch === keysSt.q.ch;
+    if (ok) keysSt.score++;
+
+    const fb = document.getElementById('keys-fb');
+    fb.className  = ok ? 'feedback correct' : 'feedback wrong';
+    fb.textContent = ok
+        ? `✓ Correct! That's ${keysSt.q.display}.`
+        : `✗ That's ${NOTES_12[k.ch].name}. The correct key is highlighted in green.`;
+
+    drawKB(keysSt.q.ch, ok ? null : k);
+    document.getElementById('keys-reveal').disabled = false;
+    renderKeysScore();
+});
+
+keysCvs.addEventListener('mousemove', e => {
+    if (keysSt.answered) return;
+    const r = keysCvs.getBoundingClientRect();
+    const k = hitKB(e.clientX - r.left, e.clientY - r.top);
+    if (k !== keysSt.hov) { keysSt.hov = k; drawKB(-1, null); }
+});
+
+keysCvs.addEventListener('mouseleave', () => {
+    keysSt.hov = null;
+    if (!keysSt.answered) drawKB(-1, null);
+});
+
+function renderKeysScore() {
+    const el = document.getElementById('keys-score');
+    const { score, total } = keysSt;
+    if (!total) { el.textContent = '—'; el.style.color = 'var(--muted)'; return; }
+    el.textContent = `${score} / ${total}`;
+    const p = score / total;
+    el.style.color = p >= 0.8 ? 'var(--correct)' : p >= 0.6 ? 'var(--accent)' : 'var(--wrong)';
+}
+
+document.getElementById('keys-new').addEventListener('click', () => {
+    keysSt.q = genKeysQ();
+    keysSt.answered = false;
+    keysSt.hov = null;
+
+    document.getElementById('keys-qMain').innerHTML =
+        `Find the key for <span class="note-name">${keysSt.q.display}</span>`;
+    document.getElementById('keys-fb').className      = 'feedback';
+    document.getElementById('keys-reveal').disabled   = true;
+
+    drawKB(-1, null);
+    renderKeysScore();
+});
+
+document.getElementById('keys-reveal').addEventListener('click', () => {
+    if (!keysSt.q || keysSt.answered) return;
+    keysSt.answered = true;
+    keysSt.total++;
+    const fb = document.getElementById('keys-fb');
+    fb.className  = 'feedback wrong';
+    fb.textContent = `The answer is ${keysSt.q.display}.`;
+    drawKB(keysSt.q.ch, null);
+    renderKeysScore();
+});
+
+// ═══════════════════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+});
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+buildNoteGrid();
+buildKBKeys();
+drawStaffCanvas(null);
+drawKB(-1, null);
+</script>
+</body>
+</html>
