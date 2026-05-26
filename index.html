@@ -63,7 +63,7 @@
         .panel { display: none; width: 100%; flex-direction: column; align-items: center; gap: 14px; }
         .panel.active { display: flex; }
         #panel-staff { max-width: 580px; }
-        #panel-keys  { max-width: 668px; }
+        #panel-keys  { max-width: 870px; }
 
         /* ── Question Card ── */
         .question-card {
@@ -224,7 +224,7 @@
     </div>
 
     <div class="canvas-wrap" style="padding:10px;">
-        <canvas id="keys-canvas" width="640" height="165" style="cursor:pointer"></canvas>
+        <canvas id="keys-canvas" width="826" height="216" style="cursor:pointer"></canvas>
     </div>
 
     <div class="feedback" id="keys-fb"></div>
@@ -556,14 +556,14 @@ document.getElementById('staff-reveal').addEventListener('click', () => {
 const keysCvs = document.getElementById('keys-canvas');
 const kc      = keysCvs.getContext('2d');
 
-const WW = 44;  // white key width (includes 1px gap)
-const WH = 140; // white key height
-const BW = 27;  // black key width
-const BH = 88;  // black key height
-const KY = 12;  // top padding inside canvas
+const WW = 57;  // white key width (includes 1px gap)
+const WH = 182; // white key height
+const BW = 35;  // black key width
+const BH = 114; // black key height
+const KY = 14;  // top padding inside canvas
 
 // Black key x-offset from start of octave (left edge of key)
-const BOFF = { 1: 30, 3: 73, 6: 161, 8: 205, 10: 248 };
+const BOFF = { 1: 39, 3: 95, 6: 209, 8: 265, 10: 322 };
 
 // White key chromatic indices: C D E F G A B
 const WHITE_CH = [0, 2, 4, 5, 7, 9, 11];
@@ -633,7 +633,7 @@ function drawKB(hlCh, wrongKey) {
 
     // Octave labels on C keys
     kc.fillStyle    = '#888';
-    kc.font         = '9px "Segoe UI",sans-serif';
+    kc.font         = '11px "Segoe UI",sans-serif';
     kc.textAlign    = 'center';
     kc.textBaseline = 'bottom';
     KB.filter(k => !k.isBlack && k.ch === 0).forEach(k => {
