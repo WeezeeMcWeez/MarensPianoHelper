@@ -62,8 +62,9 @@
         /* ── Panels ── */
         .panel { display: none; width: 100%; flex-direction: column; align-items: center; gap: 14px; }
         .panel.active { display: flex; }
-        #panel-staff { max-width: 580px; }
-        #panel-keys  { max-width: 870px; }
+        #panel-staff     { max-width: 580px; }
+        #panel-intervals { max-width: 580px; }
+        #panel-keys      { max-width: 870px; }
 
         /* ── Question Card ── */
         .question-card {
@@ -133,6 +134,12 @@
             grid-template-columns: repeat(6, 1fr);
             gap: 6px;
         }
+        .interval-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
         .note-btn {
             padding: 11px 4px;
             border-radius: 7px;
@@ -174,11 +181,12 @@
 
 <header>
     <h1>&#127929; Piano Theory Trainer</h1>
-    <p>Staff reading &amp; keyboard identification &nbsp;&middot;&nbsp; All 12 notes</p>
+    <p>Staff reading, intervals &amp; keyboard identification &nbsp;&middot;&nbsp; All 12 notes</p>
 </header>
 
 <div class="tab-nav">
     <button class="tab-btn active" data-tab="staff">&#x1F3B5; Staff Reading</button>
+    <button class="tab-btn" data-tab="intervals">&#x1F3BC; Basic Intervals</button>
     <button class="tab-btn" data-tab="keys">&#x1F3B9; Keyboard</button>
 </div>
 
@@ -207,6 +215,34 @@
     <div class="controls">
         <button class="btn btn-primary"   id="staff-new">New Question</button>
         <button class="btn btn-secondary" id="staff-reveal" disabled>Reveal Answer</button>
+    </div>
+</div>
+
+<!-- ═══ INTERVALS PANEL ═══ -->
+<div id="panel-intervals" class="panel">
+    <div class="question-card">
+        <div>
+            <div class="q-eyebrow">Identify the interval number</div>
+            <div class="q-main" id="interval-qMain">Press <strong>New Question</strong> to begin</div>
+            <div class="q-detail" id="interval-qDetail"></div>
+        </div>
+        <div class="score-box">
+            <div class="score-label">Score</div>
+            <div class="score-value" id="interval-score" style="color:var(--muted)">&#8212;</div>
+        </div>
+    </div>
+
+    <div class="canvas-wrap">
+        <canvas id="interval-canvas" width="520" height="220"></canvas>
+    </div>
+
+    <div class="feedback" id="interval-fb"></div>
+
+    <div class="interval-grid" id="interval-grid"></div>
+
+    <div class="controls">
+        <button class="btn btn-primary"   id="interval-new">New Question</button>
+        <button class="btn btn-secondary" id="interval-reveal" disabled>Reveal Answer</button>
     </div>
 </div>
 
@@ -460,6 +496,33 @@ function drawFlag(ctx, sx, sy, up, G, yOff) {
     ctx.restore();
 }
 
+function drawStaffNote(ctx, nx, pos, acc, noteValue) {
+    const ny    = posToY(pos);
+    const ledHW = S.G * 1.1;
+    ctx.strokeStyle = S.TEXT;
+    ctx.lineWidth   = 1.2;
+    if (pos <= -2) {
+        for (let p = -2; p >= pos; p -= 2) {
+            const ly = posToY(p);
+            ctx.beginPath(); ctx.moveTo(nx - ledHW, ly); ctx.lineTo(nx + ledHW, ly); ctx.stroke();
+        }
+    }
+    if (pos >= 10) {
+        for (let p = 10; p <= pos; p += 2) {
+            const ly = posToY(p);
+            ctx.beginPath(); ctx.moveTo(nx - ledHW, ly); ctx.lineTo(nx + ledHW, ly); ctx.stroke();
+        }
+    }
+    if (acc) {
+        ctx.fillStyle    = S.TEXT;
+        ctx.font         = `bold ${S.G * 2.0}px "Segoe UI Symbol","DejaVu Sans",sans-serif`;
+        ctx.textAlign    = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(acc === '#' ? '♯' : '♭', nx - S.G * 0.85, ny);
+    }
+    drawNoteShape(ctx, nx, ny, pos, noteValue);
+}
+
 // ── Staff quiz state & UI ─────────────────────────────
 const staffSt = { q: null, answered: false, score: 0, total: 0 };
 
@@ -548,6 +611,153 @@ document.getElementById('staff-reveal').addEventListener('click', () => {
     fb.className  = 'feedback wrong';
     fb.textContent = `The note is ${cName} (${staffSt.q.clef} clef).`;
     renderStaffScore();
+});
+
+// ═══════════════════════════════════════════════════════
+//  INTERVAL QUIZ
+// ═══════════════════════════════════════════════════════
+const intervalCvs = document.getElementById('interval-canvas');
+const ic          = intervalCvs.getContext('2d');
+const I_NX1 = 200, I_NX2 = 340;
+
+// Diatonic step gap (index) -> interval number name. Only the *number* is
+// tested here (not major/minor/perfect quality) to keep this tab basic.
+const INTERVAL_NUMBER_LABELS = ['2nd', '3rd', '4th', '5th', '6th', '7th', 'Octave'];
+const INTERVAL_ORDER = INTERVAL_NUMBER_LABELS;
+
+function genIntervalQ() {
+    const treble = Math.random() < 0.5;
+    const pool   = treble ? TREBLE_POOL : BASS_POOL;
+    const diff   = 1 + rnd(7); // diatonic step gap: 2nd through octave
+    const i1     = rnd(pool.length - diff);
+    const i2     = i1 + diff;
+    const e1 = pool[i1], e2 = pool[i2];
+
+    return {
+        clef: treble ? 'treble' : 'bass',
+        n1: { lt: e1.lt, pos: e1.pos, acc: null },
+        n2: { lt: e2.lt, pos: e2.pos, acc: null },
+        label: INTERVAL_NUMBER_LABELS[diff - 1],
+    };
+}
+
+function noteDisplay(n) {
+    return n.lt + (n.acc === '#' ? '#' : n.acc === 'b' ? 'b' : '');
+}
+
+function intervalPhrase(q) {
+    const article = q.label === 'Octave' ? 'an' : 'a';
+    return `${noteDisplay(q.n1)} to ${noteDisplay(q.n2)} is ${article} ${q.label}.`;
+}
+
+function drawIntervalCanvas(q) {
+    ic.clearRect(0, 0, intervalCvs.width, intervalCvs.height);
+    ic.fillStyle = S.SURFACE;
+    ic.fillRect(0, 0, intervalCvs.width, intervalCvs.height);
+
+    ic.strokeStyle = S.TEXT;
+    ic.lineWidth   = 1.2;
+    for (let i = 0; i < 5; i++) {
+        const y = S.yBot - i * S.G;
+        ic.beginPath(); ic.moveTo(S.sL, y); ic.lineTo(S.sR, y); ic.stroke();
+    }
+
+    if (!q) return;
+
+    ic.fillStyle    = S.TEXT;
+    ic.textBaseline = 'alphabetic';
+    ic.textAlign    = 'left';
+    if (q.clef === 'treble') {
+        ic.font = `${S.G * 5.8}px "Segoe UI Symbol","Apple Symbols","FreeSerif",serif`;
+        ic.fillText('𝄞', S.sL + 3, S.yBot + S.G * 0.65);
+    } else {
+        ic.font = `${S.G * 3.6}px "Segoe UI Symbol","Apple Symbols","FreeSerif",serif`;
+        ic.fillText('𝄢', S.sL + 5, S.yBot - S.G * 0.45);
+    }
+
+    drawStaffNote(ic, I_NX1, q.n1.pos, q.n1.acc, 'whole');
+    drawStaffNote(ic, I_NX2, q.n2.pos, q.n2.acc, 'whole');
+}
+
+const intervalSt = { q: null, answered: false, score: 0, total: 0 };
+
+function buildIntervalGrid() {
+    const grid = document.getElementById('interval-grid');
+    INTERVAL_ORDER.forEach(label => {
+        const btn = document.createElement('button');
+        btn.className     = 'note-btn';
+        btn.dataset.label = label;
+        btn.textContent   = label;
+        btn.addEventListener('click', () => onIntervalBtn(label));
+        grid.appendChild(btn);
+    });
+}
+
+function onIntervalBtn(label) {
+    if (!intervalSt.q || intervalSt.answered) return;
+    intervalSt.answered = true;
+    intervalSt.total++;
+    const ok = label === intervalSt.q.label;
+    if (ok) intervalSt.score++;
+
+    document.querySelectorAll('#interval-grid .note-btn').forEach(b => {
+        b.disabled = true;
+        if (b.dataset.label === intervalSt.q.label)      b.classList.add('is-correct');
+        else if (b.dataset.label === label && !ok)        b.classList.add('is-wrong');
+    });
+
+    const fb = document.getElementById('interval-fb');
+    fb.className  = ok ? 'feedback correct' : 'feedback wrong';
+    fb.textContent = ok
+        ? `✓ Correct! ${intervalPhrase(intervalSt.q)}`
+        : `✗ Not quite. ${intervalPhrase(intervalSt.q)}`;
+
+    document.getElementById('interval-reveal').disabled = false;
+    renderIntervalScore();
+}
+
+function renderIntervalScore() {
+    const el = document.getElementById('interval-score');
+    const { score, total } = intervalSt;
+    if (!total) { el.textContent = '—'; el.style.color = 'var(--muted)'; return; }
+    el.textContent = `${score} / ${total}`;
+    const p = score / total;
+    el.style.color = p >= 0.8 ? 'var(--correct)' : p >= 0.6 ? 'var(--accent)' : 'var(--wrong)';
+}
+
+document.getElementById('interval-new').addEventListener('click', () => {
+    intervalSt.q = genIntervalQ();
+    intervalSt.answered = false;
+    const q = intervalSt.q;
+
+    const chip = q.clef === 'treble'
+        ? '<span class="clef-chip chip-treble">Treble Clef</span>'
+        : '<span class="clef-chip chip-bass">Bass Clef</span>';
+    document.getElementById('interval-qMain').innerHTML   = `What interval number is this (2nd, 3rd, …)? ${chip}`;
+    document.getElementById('interval-qDetail').innerHTML = '';
+
+    document.querySelectorAll('#interval-grid .note-btn').forEach(b => {
+        b.disabled = false; b.className = 'note-btn';
+    });
+    document.getElementById('interval-fb').className    = 'feedback';
+    document.getElementById('interval-reveal').disabled = true;
+
+    drawIntervalCanvas(q);
+    renderIntervalScore();
+});
+
+document.getElementById('interval-reveal').addEventListener('click', () => {
+    if (!intervalSt.q || intervalSt.answered) return;
+    intervalSt.answered = true;
+    intervalSt.total++;
+    document.querySelectorAll('#interval-grid .note-btn').forEach(b => {
+        b.disabled = true;
+        if (b.dataset.label === intervalSt.q.label) b.classList.add('is-correct');
+    });
+    const fb = document.getElementById('interval-fb');
+    fb.className  = 'feedback wrong';
+    fb.textContent = intervalPhrase(intervalSt.q);
+    renderIntervalScore();
 });
 
 // ═══════════════════════════════════════════════════════
@@ -737,8 +947,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 //  INIT
 // ═══════════════════════════════════════════════════════
 buildNoteGrid();
+buildIntervalGrid();
 buildKBKeys();
 drawStaffCanvas(null);
+drawIntervalCanvas(null);
 drawKB(-1, null);
 </script>
 </body>
