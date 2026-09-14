@@ -199,6 +199,56 @@
         }
         .celebrate-banner.show { opacity: 1; transform: translate(-50%, 0); }
 
+        .celebrate-cat {
+            position: fixed;
+            bottom: 10%;
+            left: 0;
+            font-size: 2.8rem;
+            z-index: 1001;
+            pointer-events: none;
+            animation: catRun 2.8s ease-in-out forwards;
+            filter: drop-shadow(0 6px 8px rgba(0,0,0,.4));
+        }
+        .celebrate-cat.cat-b {
+            bottom: 23%;
+            font-size: 2.1rem;
+            animation-name: catRunReverse;
+            animation-delay: 0.25s;
+        }
+        @keyframes catRun {
+            0%   { transform: translate(-20vw, 0); }
+            15%  { transform: translate(0vw, -16px); }
+            30%  { transform: translate(20vw, 0); }
+            45%  { transform: translate(40vw, -16px); }
+            60%  { transform: translate(60vw, 0); }
+            75%  { transform: translate(80vw, -16px); }
+            90%  { transform: translate(100vw, 0); }
+            100% { transform: translate(120vw, 0); }
+        }
+        @keyframes catRunReverse {
+            0%   { transform: translate(120vw, 0) scaleX(-1); }
+            15%  { transform: translate(100vw, -16px) scaleX(-1); }
+            30%  { transform: translate(80vw, 0) scaleX(-1); }
+            45%  { transform: translate(60vw, -16px) scaleX(-1); }
+            60%  { transform: translate(40vw, 0) scaleX(-1); }
+            75%  { transform: translate(20vw, -16px) scaleX(-1); }
+            90%  { transform: translate(0vw, 0) scaleX(-1); }
+            100% { transform: translate(-20vw, 0) scaleX(-1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .celebrate-cat, .celebrate-cat.cat-b {
+                left: 50%;
+                bottom: 16%;
+                animation: catFade 1.8s ease forwards !important;
+            }
+        }
+        @keyframes catFade {
+            0%   { opacity: 0; transform: translateX(-50%); }
+            15%  { opacity: 1; transform: translateX(-50%); }
+            80%  { opacity: 1; transform: translateX(-50%); }
+            100% { opacity: 0; transform: translateX(-50%); }
+        }
+
         /* ── Feedback ── */
         .feedback {
             width: 100%;
@@ -283,16 +333,6 @@
     <p>Staff reading, intervals &amp; keyboard identification &nbsp;&middot;&nbsp; All 12 notes</p>
 </header>
 
-<div class="progress-card" id="progress-card">
-    <div class="streak-chip" id="streak-chip">&#x1F525; 0 day streak</div>
-    <div class="goal-block">
-        <div class="goal-label">Today's Goal <button class="goal-edit" id="goal-edit" title="Change today's goal">&#9998;&#65039;</button></div>
-        <div class="goal-track"><div class="goal-fill" id="goal-fill"></div></div>
-        <div class="goal-text" id="goal-text">0 / 15</div>
-    </div>
-    <div class="level-chip" id="level-chip">&#x1F3C6; Level 1 &middot; 0 pts</div>
-</div>
-
 <div class="tab-nav">
     <button class="tab-btn active" data-tab="staff">&#x1F3B5; Staff Reading</button>
     <button class="tab-btn" data-tab="intervals">&#x1F3BC; Basic Intervals</button>
@@ -301,6 +341,16 @@
 
 <!-- ═══ STAFF PANEL ═══ -->
 <div id="panel-staff" class="panel active">
+    <div class="progress-card">
+        <div class="streak-chip" id="streak-chip-staff">&#x1F525; 0 day streak</div>
+        <div class="goal-block">
+            <div class="goal-label">Today's Goal <button class="goal-edit" id="goal-edit-staff" title="Change today's goal">&#9998;&#65039;</button></div>
+            <div class="goal-track"><div class="goal-fill" id="goal-fill-staff"></div></div>
+            <div class="goal-text" id="goal-text-staff">0 / 15</div>
+        </div>
+        <div class="level-chip" id="level-chip-staff">&#x1F3C6; Level 1 &middot; 0 pts</div>
+    </div>
+
     <div class="question-card">
         <div>
             <div class="q-eyebrow">Identify the note</div>
@@ -329,6 +379,16 @@
 
 <!-- ═══ INTERVALS PANEL ═══ -->
 <div id="panel-intervals" class="panel">
+    <div class="progress-card">
+        <div class="streak-chip" id="streak-chip-intervals">&#x1F525; 0 day streak</div>
+        <div class="goal-block">
+            <div class="goal-label">Today's Goal <button class="goal-edit" id="goal-edit-intervals" title="Change today's goal">&#9998;&#65039;</button></div>
+            <div class="goal-track"><div class="goal-fill" id="goal-fill-intervals"></div></div>
+            <div class="goal-text" id="goal-text-intervals">0 / 15</div>
+        </div>
+        <div class="level-chip" id="level-chip-intervals">&#x1F3C6; Level 1 &middot; 0 pts</div>
+    </div>
+
     <div class="question-card">
         <div>
             <div class="q-eyebrow">Identify the interval number</div>
@@ -357,6 +417,16 @@
 
 <!-- ═══ KEYS PANEL ═══ -->
 <div id="panel-keys" class="panel">
+    <div class="progress-card">
+        <div class="streak-chip" id="streak-chip-keys">&#x1F525; 0 day streak</div>
+        <div class="goal-block">
+            <div class="goal-label">Today's Goal <button class="goal-edit" id="goal-edit-keys" title="Change today's goal">&#9998;&#65039;</button></div>
+            <div class="goal-track"><div class="goal-fill" id="goal-fill-keys"></div></div>
+            <div class="goal-text" id="goal-text-keys">0 / 15</div>
+        </div>
+        <div class="level-chip" id="level-chip-keys">&#x1F3C6; Level 1 &middot; 0 pts</div>
+    </div>
+
     <div class="question-card">
         <div>
             <div class="q-eyebrow">Find the key</div>
@@ -422,11 +492,12 @@ function rnd(n) { return Math.floor(Math.random() * n); }
 
 // ═══════════════════════════════════════════════════════
 //  PROGRESS / SCORING SYSTEM
-//  Points are shared across all three tabs and persisted in
-//  localStorage, so practice on any tab counts toward the same
-//  daily goal, streak, and level.
+//  Each tab (staff, intervals, keys) tracks its own points,
+//  daily goal, and streak independently, persisted in localStorage.
 // ═══════════════════════════════════════════════════════
 const PROGRESS_KEY = 'pianoTrainerProgress';
+const TABS = ['staff', 'intervals', 'keys'];
+const TAB_LABELS = { staff: 'Staff Reading', intervals: 'Basic Intervals', keys: 'Keyboard' };
 
 function dateStr(offsetDays) {
     const d = new Date();
@@ -434,21 +505,28 @@ function dateStr(offsetDays) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function defaultTabProgress() {
+    return { totalCorrect: 0, dailyGoal: 15, today: dateStr(), todayCorrect: 0, streak: 0, lastGoalMetDate: null, celebratedToday: false };
+}
+
 function loadProgress() {
-    let p = null;
-    try { p = JSON.parse(localStorage.getItem(PROGRESS_KEY)); } catch (e) { p = null; }
-    if (!p || typeof p !== 'object') {
-        p = { totalCorrect: 0, dailyGoal: 15, today: dateStr(), todayCorrect: 0, streak: 0, lastGoalMetDate: null, celebratedToday: false };
-    }
-    if (p.today !== dateStr()) {
-        if (p.lastGoalMetDate !== dateStr() && p.lastGoalMetDate !== dateStr(-1)) {
-            p.streak = 0; // missed a day — streak resets
+    let store = null;
+    try { store = JSON.parse(localStorage.getItem(PROGRESS_KEY)); } catch (e) { store = null; }
+    if (!store || typeof store !== 'object') store = {};
+    TABS.forEach(tab => {
+        let p = store[tab];
+        if (!p || typeof p !== 'object') p = defaultTabProgress();
+        if (p.today !== dateStr()) {
+            if (p.lastGoalMetDate !== dateStr() && p.lastGoalMetDate !== dateStr(-1)) {
+                p.streak = 0; // missed a day — streak resets
+            }
+            p.today = dateStr();
+            p.todayCorrect = 0;
+            p.celebratedToday = false;
         }
-        p.today = dateStr();
-        p.todayCorrect = 0;
-        p.celebratedToday = false;
-    }
-    return p;
+        store[tab] = p;
+    });
+    return store;
 }
 
 function saveProgress() {
@@ -458,68 +536,89 @@ function saveProgress() {
 let progress = loadProgress();
 saveProgress();
 
-function renderProgress() {
-    const pct = Math.min(100, Math.round((progress.todayCorrect / progress.dailyGoal) * 100));
-    const fill = document.getElementById('goal-fill');
+function renderProgress(tab) {
+    const p = progress[tab];
+    const pct = Math.min(100, Math.round((p.todayCorrect / p.dailyGoal) * 100));
+    const fill = document.getElementById('goal-fill-' + tab);
     fill.style.width = pct + '%';
-    fill.classList.toggle('goal-complete', progress.todayCorrect >= progress.dailyGoal);
-    document.getElementById('goal-text').textContent = `${progress.todayCorrect} / ${progress.dailyGoal}`;
-    document.getElementById('streak-chip').textContent =
-        progress.streak > 0 ? `\u{1F525} ${progress.streak} day streak` : `\u{1F525} Start a streak!`;
-    const level = 1 + Math.floor(progress.totalCorrect / 50);
-    document.getElementById('level-chip').textContent = `\u{1F3C6} Level ${level} · ${progress.totalCorrect} pts`;
+    fill.classList.toggle('goal-complete', p.todayCorrect >= p.dailyGoal);
+    document.getElementById('goal-text-' + tab).textContent = `${p.todayCorrect} / ${p.dailyGoal}`;
+    document.getElementById('streak-chip-' + tab).textContent =
+        p.streak > 0 ? `\u{1F525} ${p.streak} day streak` : `\u{1F525} Start a streak!`;
+    const level = 1 + Math.floor(p.totalCorrect / 50);
+    document.getElementById('level-chip-' + tab).textContent = `\u{1F3C6} Level ${level} · ${p.totalCorrect} pts`;
 }
 
-function checkGoalAndCelebrate() {
-    if (progress.todayCorrect >= progress.dailyGoal && !progress.celebratedToday) {
-        progress.celebratedToday = true;
-        if (progress.lastGoalMetDate !== dateStr()) {
-            progress.streak = (progress.lastGoalMetDate === dateStr(-1)) ? progress.streak + 1 : 1;
-            progress.lastGoalMetDate = dateStr();
+function checkGoalAndCelebrate(tab) {
+    const p = progress[tab];
+    if (p.todayCorrect >= p.dailyGoal && !p.celebratedToday) {
+        p.celebratedToday = true;
+        if (p.lastGoalMetDate !== dateStr()) {
+            p.streak = (p.lastGoalMetDate === dateStr(-1)) ? p.streak + 1 : 1;
+            p.lastGoalMetDate = dateStr();
         }
         saveProgress();
-        renderProgress();
-        celebrate();
+        renderProgress(tab);
+        celebrate(tab);
     }
 }
 
-function recordCorrect() {
-    progress.totalCorrect++;
-    progress.todayCorrect++;
+function recordCorrect(tab) {
+    const p = progress[tab];
+    p.totalCorrect++;
+    p.todayCorrect++;
     saveProgress();
-    renderProgress();
-    checkGoalAndCelebrate();
+    renderProgress(tab);
+    checkGoalAndCelebrate(tab);
 }
 
-document.getElementById('goal-edit').addEventListener('click', () => {
-    const input = window.prompt("How many correct answers should today's goal be?", String(progress.dailyGoal));
-    if (input === null) return;
-    const n = parseInt(input, 10);
-    if (!Number.isFinite(n) || n < 1) return;
-    progress.dailyGoal = Math.min(n, 999);
-    saveProgress();
-    renderProgress();
-    checkGoalAndCelebrate();
+TABS.forEach(tab => {
+    document.getElementById('goal-edit-' + tab).addEventListener('click', () => {
+        const p = progress[tab];
+        const input = window.prompt(`How many correct answers should today's ${TAB_LABELS[tab]} goal be?`, String(p.dailyGoal));
+        if (input === null) return;
+        const n = parseInt(input, 10);
+        if (!Number.isFinite(n) || n < 1) return;
+        p.dailyGoal = Math.min(n, 999);
+        saveProgress();
+        renderProgress(tab);
+        checkGoalAndCelebrate(tab);
+    });
 });
 
-// ── Celebration: confetti + chime + banner ──────────────
+// ── Celebration: confetti + chime + banner + cats ────────
 const confettiCvs = document.getElementById('confetti-canvas');
 const ccx         = confettiCvs.getContext('2d');
 const CONFETTI_COLORS = ['#f0a030', '#4cc2ff', '#2ecc71', '#e74c3c', '#e8eaf6'];
+const CAT_EMOJI = ['\u{1F408}', '\u{1F431}']; // 🐈 🐱
 let confettiRAF = null;
 
-function celebrate() {
+function celebrate(tab) {
     showConfetti();
+    showCats();
     playChime();
-    showBanner();
+    showBanner(tab);
 }
 
-function showBanner() {
+function showBanner(tab) {
+    const p = progress[tab];
     const el = document.getElementById('celebrate-banner');
-    el.textContent = `\u{1F389} Goal reached! ${progress.dailyGoal} correct today — awesome work! \u{1F389}`;
+    el.textContent = `\u{1F389} ${TAB_LABELS[tab]} goal reached! ${p.dailyGoal} correct today — awesome work! \u{1F389}`;
     el.classList.add('show');
     clearTimeout(showBanner._t);
     showBanner._t = setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function showCats() {
+    const c1 = document.createElement('div');
+    c1.className   = 'celebrate-cat';
+    c1.textContent = CAT_EMOJI[rnd(CAT_EMOJI.length)];
+    const c2 = document.createElement('div');
+    c2.className   = 'celebrate-cat cat-b';
+    c2.textContent = CAT_EMOJI[rnd(CAT_EMOJI.length)];
+    document.body.appendChild(c1);
+    document.body.appendChild(c2);
+    setTimeout(() => { c1.remove(); c2.remove(); }, 3200);
 }
 
 function playChime() {
@@ -828,7 +927,7 @@ function onNoteBtn(idx) {
     staffSt.answered = true;
     staffSt.total++;
     const ok = idx === staffSt.q.ch;
-    if (ok) { staffSt.score++; recordCorrect(); }
+    if (ok) { staffSt.score++; recordCorrect('staff'); }
 
     document.querySelectorAll('.note-btn').forEach(b => {
         b.disabled = true;
@@ -978,7 +1077,7 @@ function onIntervalBtn(label) {
     intervalSt.answered = true;
     intervalSt.total++;
     const ok = label === intervalSt.q.label;
-    if (ok) { intervalSt.score++; recordCorrect(); }
+    if (ok) { intervalSt.score++; recordCorrect('intervals'); }
 
     document.querySelectorAll('#interval-grid .note-btn').forEach(b => {
         b.disabled = true;
@@ -1152,7 +1251,7 @@ keysCvs.addEventListener('click', e => {
     keysSt.answered = true;
     keysSt.total++;
     const ok = k.ch === keysSt.q.ch;
-    if (ok) { keysSt.score++; recordCorrect(); }
+    if (ok) { keysSt.score++; recordCorrect('keys'); }
 
     const fb = document.getElementById('keys-fb');
     fb.className  = ok ? 'feedback correct' : 'feedback wrong';
@@ -1232,7 +1331,7 @@ buildKBKeys();
 drawStaffCanvas(null);
 drawIntervalCanvas(null);
 drawKB(-1, null);
-renderProgress();
+TABS.forEach(renderProgress);
 </script>
 </body>
 </html>
