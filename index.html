@@ -203,37 +203,61 @@
             position: fixed;
             bottom: 10%;
             left: 0;
-            font-size: 2.8rem;
+            width: 92px;
             z-index: 1001;
             pointer-events: none;
-            animation: catRun 2.8s ease-in-out forwards;
+            animation: catRun 3.6s ease-in-out forwards;
             filter: drop-shadow(0 6px 8px rgba(0,0,0,.4));
         }
+        .celebrate-cat svg { display: block; width: 100%; height: auto; }
         .celebrate-cat.cat-b {
-            bottom: 23%;
-            font-size: 2.1rem;
+            bottom: 24%;
+            width: 68px;
             animation-name: catRunReverse;
             animation-delay: 0.25s;
         }
+        .cat-tail-g {
+            transform-box: fill-box;
+            transform-origin: 100% 100%;
+            animation: tailWag 3.6s ease-in-out both;
+        }
+        .celebrate-cat.cat-b .cat-tail-g { animation-delay: 0.25s; }
+
+        /* Run in, stop and settle (38%-62%, tail wags here), then run out */
         @keyframes catRun {
             0%   { transform: translate(-20vw, 0); }
-            15%  { transform: translate(0vw, -16px); }
-            30%  { transform: translate(20vw, 0); }
-            45%  { transform: translate(40vw, -16px); }
-            60%  { transform: translate(60vw, 0); }
-            75%  { transform: translate(80vw, -16px); }
-            90%  { transform: translate(100vw, 0); }
+            10%  { transform: translate(-2vw, -14px); }
+            20%  { transform: translate(16vw, 0); }
+            30%  { transform: translate(30vw, -14px); }
+            38%  { transform: translate(40vw, 0); }
+            62%  { transform: translate(40vw, 0); }
+            72%  { transform: translate(56vw, -14px); }
+            82%  { transform: translate(74vw, 0); }
+            92%  { transform: translate(94vw, -14px); }
             100% { transform: translate(120vw, 0); }
         }
         @keyframes catRunReverse {
             0%   { transform: translate(120vw, 0) scaleX(-1); }
-            15%  { transform: translate(100vw, -16px) scaleX(-1); }
-            30%  { transform: translate(80vw, 0) scaleX(-1); }
-            45%  { transform: translate(60vw, -16px) scaleX(-1); }
-            60%  { transform: translate(40vw, 0) scaleX(-1); }
-            75%  { transform: translate(20vw, -16px) scaleX(-1); }
-            90%  { transform: translate(0vw, 0) scaleX(-1); }
+            10%  { transform: translate(102vw, -14px) scaleX(-1); }
+            20%  { transform: translate(84vw, 0) scaleX(-1); }
+            30%  { transform: translate(70vw, -14px) scaleX(-1); }
+            38%  { transform: translate(60vw, 0) scaleX(-1); }
+            62%  { transform: translate(60vw, 0) scaleX(-1); }
+            72%  { transform: translate(44vw, -14px) scaleX(-1); }
+            82%  { transform: translate(26vw, 0) scaleX(-1); }
+            92%  { transform: translate(6vw, -14px) scaleX(-1); }
             100% { transform: translate(-20vw, 0) scaleX(-1); }
+        }
+        /* Tail stays still while running, wags during the stop, settles before running off */
+        @keyframes tailWag {
+            0%   { transform: rotate(0deg); }
+            36%  { transform: rotate(0deg); }
+            41%  { transform: rotate(24deg); }
+            47%  { transform: rotate(-16deg); }
+            53%  { transform: rotate(20deg); }
+            59%  { transform: rotate(-10deg); }
+            64%  { transform: rotate(0deg); }
+            100% { transform: rotate(0deg); }
         }
         @media (prefers-reduced-motion: reduce) {
             .celebrate-cat, .celebrate-cat.cat-b {
@@ -241,6 +265,7 @@
                 bottom: 16%;
                 animation: catFade 1.8s ease forwards !important;
             }
+            .cat-tail-g { animation: none !important; }
         }
         @keyframes catFade {
             0%   { opacity: 0; transform: translateX(-50%); }
@@ -590,8 +615,25 @@ TABS.forEach(tab => {
 const confettiCvs = document.getElementById('confetti-canvas');
 const ccx         = confettiCvs.getContext('2d');
 const CONFETTI_COLORS = ['#f0a030', '#4cc2ff', '#2ecc71', '#e74c3c', '#e8eaf6'];
-const CAT_EMOJI = ['\u{1F408}', '\u{1F431}']; // 🐈 🐱
+const CAT_COLORS = ['#f0a030', '#4cc2ff']; // matches the bass/treble clef chip accents
 let confettiRAF = null;
+
+function catSvg(color) {
+    return `<svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+        <g class="cat-tail-g">
+            <path d="M 24 44 Q 4 38 9 18 Q 12 8 20 12" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"/>
+        </g>
+        <ellipse cx="50" cy="46" rx="26" ry="15" fill="${color}"/>
+        <rect x="37" y="56" width="7" height="11" rx="3.5" fill="${color}"/>
+        <rect x="60" y="56" width="7" height="11" rx="3.5" fill="${color}"/>
+        <circle cx="76" cy="29" r="15" fill="${color}"/>
+        <polygon points="65,19 70,4 77,18" fill="${color}"/>
+        <polygon points="82,18 89,3 93,19" fill="${color}"/>
+        <circle cx="70" cy="28" r="2.3" fill="#1a0a00"/>
+        <circle cx="83" cy="28" r="2.3" fill="#1a0a00"/>
+        <ellipse cx="77" cy="34" rx="2" ry="1.5" fill="#1a0a00"/>
+    </svg>`;
+}
 
 function celebrate(tab) {
     showConfetti();
@@ -611,14 +653,14 @@ function showBanner(tab) {
 
 function showCats() {
     const c1 = document.createElement('div');
-    c1.className   = 'celebrate-cat';
-    c1.textContent = CAT_EMOJI[rnd(CAT_EMOJI.length)];
+    c1.className = 'celebrate-cat';
+    c1.innerHTML  = catSvg(CAT_COLORS[0]);
     const c2 = document.createElement('div');
-    c2.className   = 'celebrate-cat cat-b';
-    c2.textContent = CAT_EMOJI[rnd(CAT_EMOJI.length)];
+    c2.className = 'celebrate-cat cat-b';
+    c2.innerHTML  = catSvg(CAT_COLORS[1]);
     document.body.appendChild(c1);
     document.body.appendChild(c2);
-    setTimeout(() => { c1.remove(); c2.remove(); }, 3200);
+    setTimeout(() => { c1.remove(); c2.remove(); }, 4100);
 }
 
 function playChime() {
